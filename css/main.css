@@ -1,0 +1,76 @@
+:root {
+    --marker-color: #000000;
+}
+
+.marker {
+    align-items: center;
+    background-color: var(--marker-color);
+    border-radius: 50%;
+    color: #263238;
+    display: flex;
+    font-size: 14px;
+    gap: 15px;
+    height: 30px;
+    justify-content: center;
+    padding: 4px;
+    position: relative;
+    transition: all 0.3s ease-out;
+    width: 30px;
+}
+
+.marker::after {
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-top: 9px solid var(--marker-color);
+    content: "";
+    height: 0;
+    left: 50%;
+    position: absolute;
+    top: 95%;
+    transform: translate(-50%, 0);
+    transition: all 0.3s ease-out;
+    width: 0;
+    z-index: 1;
+}
+
+.marker .icon {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    color: #FFFFFF;
+}
+
+.marker .icon svg {
+    height: 20px;
+    width: auto;
+}
+
+.marker .details {
+    display: none;
+}
+
+.marker.open {
+    background-color: #FFFFFF;
+    color: #000000;
+    box-shadow: 10px 10px 5px rgba(0, 0, 0, 0.2);
+    width: auto;
+    height: auto;
+    border-radius: 5px;
+    padding: 5px;
+}
+
+.marker.open .icon {
+    color: var(--marker-color);
+}
+
+.marker.open::after {
+    border-top-color: #FFFFFF;
+}
+
+.marker.open .details {
+    display: block;
+}
+
+#geocode-results {
+    white-space: pre-line;
+}
