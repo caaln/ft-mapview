@@ -12,10 +12,11 @@ async function geocode() {
     const geocodeResults = new Map();
 
     for(let address of decodeURIComponent(entities).split('|:|')) {
-        console.log(address);
-        promises.push(geocoder.geocode({ address }).then(function ({ results }) {
-            const position = results?.[0]?.geometry?.location ?? 'Unknown';
+        promises.push(geocoder.geocode({ address }).then(function ({ results, status }) {
+            const position = results?.[0]?.geometry?.location ?? null;
             geocodeResults.set(address, position);
+        }).catch(() => {
+            geocodeResults.set(address, null);
         }));
     }
 
@@ -23,9 +24,14 @@ async function geocode() {
 
     let html = '';
     for(let [k,v] of geocodeResults.entries()) {
-        html += `${k}: ${v}\n`;
+        console.log(v);
+        if(!v) {
+            html += `<tr><td>${k}</td><td>?</td><td>?</td></tr>\n`;
+        } else {
+            html += `<tr><td>${k}</td><td>${v.lat()}</td><td>${v.lng()}</td></tr>\n`;
+        }
     }
-    document.getElementById('geocode-results').innerHTML = html;
+    document.getElementById('geocode-results').innerHTML = `<table>${html}</table>`;
 }
 
 geocode();
