@@ -61,15 +61,34 @@
 }
 
 .marker.open .icon {
+    display: none;
+}
+
+.marker.open .line-icon {
     color: var(--marker-color);
 }
 
 .marker.open::after {
     border-top-color: #FFFFFF;
+    top: 100%;
 }
 
 .marker.open .details {
     display: block;
+}
+
+.marker .line {
+    display: flex;
+}
+
+.marker .line + .line {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid #cccccc;
+}
+
+.marker .line .line-icon {
+    padding: 10px;
 }
 
 #geocode-results {

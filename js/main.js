@@ -1,9 +1,9 @@
 let map;
 let openMarkers = 0;
+const isLatLng = /-?\d+?.\d+?,-?\d+?.\d+?/;
 
 async function initMap() {
     const [key, entities] = window.location.hash.split('|||');
-    const isLatLng = /-?\d+?.\d+?,-?\d+?.\d+?/;
 
     if (!key || !entities) {
         return;
@@ -14,6 +14,7 @@ async function initMap() {
     const {Geocoder} = await google.maps.importLibrary("geocoding");
     const geocoder = new Geocoder();
     const bounds = new google.maps.LatLngBounds();
+    const markers = [];
 
     function createMarker(map, content, position) {
         bounds.extend(position);
@@ -46,7 +47,18 @@ async function initMap() {
         mapId: "ancestry_map",
     });
 
-    const markers = [];
+    const locations = await getLocations(geocoder, entities);
+    console.log(locations);
+
+    for(const { position, items } of locations.values()) {
+        createMarker(map, buildContent(items), position);
+    }
+
+    map.fitBounds(bounds);
+}
+
+async function getLocations(geocoder, entities) {
+    const locations = new Map();
     const promises = [];
 
     for (let entity of entities.split('|:|')) {
@@ -54,36 +66,79 @@ async function initMap() {
 
         if (isLatLng.test(address)) {
             const position = new google.maps.LatLng(...address.split(','));
-            createMarker(map, buildContent(background, icon, details), position);
+            addLocation(locations, position, background, icon, details);
         } else {
             promises.push(geocoder.geocode({address}).then(function ({results}) {
                 const position = results[0].geometry.location;
-                createMarker(map, buildContent(background, icon, details), position);
+                addLocation(locations, position, background, icon, details);
             }));
         }
     }
 
     try {
         await Promise.all(promises);
-    } finally {
-        map.fitBounds(bounds);
+    } catch (e) {
+        console.log(e);
     }
+
+    return locations;
 }
 
-function buildContent(background, icon, details) {
+function addLocation(locations, position, background, icon, details) {
+    const key = `${position.lat()},${position.lng()}`;
+    const item = {background, icon, details};
+    if(locations.has(key)) {
+        locations.get(key).items.push(item);
+    } else {
+        locations.set(key, { position, items: [item] });
+    }
+
+    return locations;
+}
+
+function buildContent(items) {
+    let data = null;
+    let details = [];
+
+    for(const item of items) {
+        details.push(`
+            <div class="line" style="--marker-color: ${item.background}">
+                <div class="line-icon">
+                    <i aria-hidden="true" class="fa fa-icon fa-${item.icon}" title="${item.icon}"></i>
+                    <span class="fa-sr-only">${item.icon}</span>
+                </div>
+                <div class="line-details">
+                    ${item.details}
+                </div>
+            </div>
+        `);
+
+        if (data === null) {
+            data = item;
+        } else {
+            if (data.background !== item.background) {
+                data.background = 'black';
+            }
+            if (data.icon !== item.icon) {
+                data.icon = 'list';
+            }
+        }
+    }
+
     const content = document.createElement("div");
 
     content.classList.add("marker");
-    content.style.setProperty("--marker-color", background);
+    content.style.setProperty("--marker-color", data.background);
     content.innerHTML = `
         <div class="icon">
-            <i aria-hidden="true" class="fa fa-icon fa-${icon}" title="${icon}"></i>
-            <span class="fa-sr-only">${icon}</span>
+            <i aria-hidden="true" class="fa fa-icon fa-${data.icon}" title="${data.icon}"></i>
+            <span class="fa-sr-only">${data.icon}</span>
         </div>
         <div class="details">
-            ${details}
+            ${details.join("")}
         </div>
     `;
+
     return content;
 }
 
