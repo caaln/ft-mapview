@@ -3,9 +3,9 @@ let openMarkers = 0;
 const isLatLng = /-?\d+?.\d+?,-?\d+?.\d+?/;
 
 async function initMap() {
-    const [key, entities] = window.location.hash.split('|||');
+    const {key, pins} = JSON.parse(decodeURIComponent(window.location.hash.substring(1)));
 
-    if (!key || !entities) {
+    if (!key || !pins) {
         return;
     }
 
@@ -47,7 +47,7 @@ async function initMap() {
         mapId: "ancestry_map",
     });
 
-    const locations = await getLocations(geocoder, entities);
+    const locations = await getLocations(geocoder, pins);
     console.log(locations);
 
     for(const { position, items } of locations.values()) {
@@ -61,8 +61,8 @@ async function getLocations(geocoder, entities) {
     const locations = new Map();
     const promises = [];
 
-    for (let entity of entities.split('|:|')) {
-        let [address, background, icon, details] = decodeURIComponent(entity).split('|;|');
+    for (let entity of entities) {
+        let [address, background, icon, details] = entity;
 
         if (isLatLng.test(address)) {
             const position = new google.maps.LatLng(...address.split(','));
