@@ -3,7 +3,7 @@ let openMarkers = 0;
 const isLatLng = /-?\d+?.\d+?,-?\d+?.\d+?/;
 
 async function initMap() {
-    const {key, pins} = JSON.parse(decodeURIComponent(window.location.hash.substring(1)));
+    const {key, pins} = JSON.parse(decodeURIComponent(window.location.hash.substring(1).replaceAll('^', '"')));
 
     if (!key || !pins) {
         return;
