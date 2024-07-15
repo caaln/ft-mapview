@@ -3,7 +3,7 @@ let openMarkers = 0;
 const isLatLng = /-?\d+?.\d+?,-?\d+?.\d+?/;
 
 async function initMap() {
-    const {key, pins, legend} = JSON.parse(decodeURIComponent(window.location.hash.substring(1).replaceAll('^', '"')));
+    const {key, pins, legend, duplicateKey} = JSON.parse(decodeURIComponent(window.location.hash.substring(1).replaceAll('^', '"')));
 
     if (!key || !pins) {
         return;
@@ -52,18 +52,20 @@ async function initMap() {
 
     const locations = await getLocations(geocoder, pins);
 
+
     const hasComposite = [...locations.values()].some(({items}) => {
         return items.length > 1 && new Set([...items.map(({legendKey}) => legendKey)]).size > 1
     });
+
     const legendData = hasComposite ? {
-        composite: ['#000000', 'Composite'],
+        [duplicateKey]: ['#000000', 'Various'],
         ...legend,
     } : legend;
 
     map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(createLegend(mapEl, legendData));
 
     for(const { position, items } of locations.values()) {
-        createMarker(map, buildContent(legendData, items), position);
+        createMarker(map, buildContent(legendData, items, duplicateKey), position);
     }
 
     map.fitBounds(bounds);
@@ -123,7 +125,7 @@ function addLocation(locations, position, legendKey, icon, details) {
     return locations;
 }
 
-function buildContent(legend, items) {
+function buildContent(legend, items, duplicateKey) {
     let data = null;
     let details = [];
 
@@ -146,7 +148,7 @@ function buildContent(legend, items) {
             data = item;
         } else {
             if (data.legendKey !== item.legendKey) {
-                data.legendKey = 'composite';
+                data.legendKey = duplicateKey;
             }
             if (data.icon !== item.icon) {
                 data.icon = 'list';
