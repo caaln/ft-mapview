@@ -3,7 +3,7 @@ let openMarkers = 0;
 const isLatLng = /-?\d+?.\d+?,-?\d+?.\d+?/;
 
 async function initMap() {
-    const {key, pins} = JSON.parse(decodeURIComponent(window.location.hash.substring(1).replaceAll('^', '"')));
+    const {key, pins, legend} = JSON.parse(decodeURIComponent(window.location.hash.substring(1).replaceAll('^', '"')));
 
     if (!key || !pins) {
         return;
@@ -15,6 +15,11 @@ async function initMap() {
     const geocoder = new Geocoder();
     const bounds = new google.maps.LatLngBounds();
     const markers = [];
+
+    const legendData = {
+        composite: ['#000000', 'Composite'],
+        ...legend,
+    };
 
     function createMarker(map, content, position) {
         bounds.extend(position);
@@ -41,20 +46,38 @@ async function initMap() {
     }
 
     const position = {lat: 54.00366, lng: -2.547855};
-    map = new Map(document.getElementById("map"), {
+    const mapEl = document.getElementById("map");
+    map = new Map(mapEl, {
         zoom: 4,
         center: position,
         mapId: "ancestry_map",
     });
 
+    map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(createLegend(mapEl, legendData));
+
     const locations = await getLocations(geocoder, pins);
     console.log(locations);
 
     for(const { position, items } of locations.values()) {
-        createMarker(map, buildContent(items), position);
+        createMarker(map, buildContent(legend, items), position);
     }
 
     map.fitBounds(bounds);
+}
+
+function createLegend(mapEl, legendData) {
+    const el = document.createElement('ul');
+    el.classList.add('legend');
+    mapEl.after(el);
+
+    Object.values(legendData).forEach((item) => {
+        el.innerHTML += `<li>
+            <div class="color" style="background-color: ${item[0]}"></div>
+            <div class="label">${item[1]}</div>
+        </li>`;
+    });
+
+    return el;
 }
 
 async function getLocations(geocoder, entities) {
@@ -62,15 +85,15 @@ async function getLocations(geocoder, entities) {
     const promises = [];
 
     for (let entity of entities) {
-        let [address, background, icon, details] = entity;
+        let [address, legendKey, icon, details] = entity;
 
         if (isLatLng.test(address)) {
             const position = new google.maps.LatLng(...address.split(','));
-            addLocation(locations, position, background, icon, details);
+            addLocation(locations, position, legendKey, icon, details);
         } else {
             promises.push(geocoder.geocode({address}).then(function ({results}) {
                 const position = results[0].geometry.location;
-                addLocation(locations, position, background, icon, details);
+                addLocation(locations, position, legendKey, icon, details);
             }));
         }
     }
@@ -84,9 +107,9 @@ async function getLocations(geocoder, entities) {
     return locations;
 }
 
-function addLocation(locations, position, background, icon, details) {
+function addLocation(locations, position, legendKey, icon, details) {
     const key = `${position.lat()},${position.lng()}`;
-    const item = {background, icon, details};
+    const item = {legendKey, icon, details};
     if(locations.has(key)) {
         locations.get(key).items.push(item);
     } else {
@@ -96,13 +119,15 @@ function addLocation(locations, position, background, icon, details) {
     return locations;
 }
 
-function buildContent(items) {
+function buildContent(legend, items) {
     let data = null;
     let details = [];
 
     for(const item of items) {
+        const legendKey = parseInt(item.legendKey, 10);
+        const color = legend[legendKey][0];
         details.push(`
-            <div class="line" style="--marker-color: ${item.background}">
+            <div class="line" style="--marker-color: ${color}">
                 <div class="line-icon">
                     <i aria-hidden="true" class="fa fa-icon fa-${item.icon}" title="${item.icon}"></i>
                     <span class="fa-sr-only">${item.icon}</span>
@@ -116,8 +141,8 @@ function buildContent(items) {
         if (data === null) {
             data = item;
         } else {
-            if (data.background !== item.background) {
-                data.background = 'black';
+            if (data.legendKey !== item.legendKey) {
+                data.legendKey = 'composite';
             }
             if (data.icon !== item.icon) {
                 data.icon = 'list';
@@ -126,9 +151,8 @@ function buildContent(items) {
     }
 
     const content = document.createElement("div");
-
     content.classList.add("marker");
-    content.style.setProperty("--marker-color", data.background);
+    content.style.setProperty("--marker-color", legend[data.legendKey][0]);
     content.innerHTML = `
         <div class="icon">
             <i aria-hidden="true" class="fa fa-icon fa-${data.icon}" title="${data.icon}"></i>

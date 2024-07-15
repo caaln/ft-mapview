@@ -2,6 +2,27 @@
     --marker-color: #000000;
 }
 
+.legend {
+    list-style-type: none;
+    padding: 1rem;
+    background-color: #FFFFFF;
+    margin-right: 12px;
+    box-shadow: rgba(0, 0, 0, 0.3) 0 1px 4px -1px;
+}
+
+.legend > li {
+    display: flex;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.legend .color {
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-right: 0.75rem;
+    box-shadow: rgba(0, 0, 0, 0.2) 1px 1px 3px;
+}
+
 .marker {
     align-items: center;
     background-color: var(--marker-color);
