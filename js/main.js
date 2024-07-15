@@ -16,10 +16,7 @@ async function initMap() {
     const bounds = new google.maps.LatLngBounds();
     const markers = [];
 
-    const legendData = {
-        composite: ['#000000', 'Composite'],
-        ...legend,
-    };
+
 
     function createMarker(map, content, position) {
         bounds.extend(position);
@@ -53,13 +50,20 @@ async function initMap() {
         mapId: "ancestry_map",
     });
 
+    const locations = await getLocations(geocoder, pins);
+
+    const hasComposite = [...locations.values()].some(({items}) => {
+        return items.length > 1 && new Set([...items.map(({legendKey}) => legendKey)]).size > 1
+    });
+    const legendData = hasComposite ? {
+        composite: ['#000000', 'Composite'],
+        ...legend,
+    } : legend;
+
     map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(createLegend(mapEl, legendData));
 
-    const locations = await getLocations(geocoder, pins);
-    console.log(locations);
-
     for(const { position, items } of locations.values()) {
-        createMarker(map, buildContent(legend, items), position);
+        createMarker(map, buildContent(legendData, items), position);
     }
 
     map.fitBounds(bounds);
