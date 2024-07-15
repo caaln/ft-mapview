@@ -2,6 +2,9 @@ let map;
 let openMarkers = 0;
 const isLatLng = /-?\d+?.\d+?,-?\d+?.\d+?/;
 
+const markers = [];
+const hiddenLegendKeys = new Set();
+
 async function initMap() {
     const {key, pins, legend, duplicateKey} = JSON.parse(decodeURIComponent(window.location.hash.substring(1).replaceAll('^', '"')));
 
@@ -14,9 +17,6 @@ async function initMap() {
     const {Geocoder} = await google.maps.importLibrary("geocoding");
     const geocoder = new Geocoder();
     const bounds = new google.maps.LatLngBounds();
-    const markers = [];
-
-
 
     function createMarker(map, content, position) {
         bounds.extend(position);
@@ -72,18 +72,21 @@ async function initMap() {
 }
 
 function createLegend(mapEl, legendData) {
-    const el = document.createElement('ul');
-    el.classList.add('legend');
-    mapEl.after(el);
+    const ul = document.createElement('ul');
+    ul.classList.add('legend');
+    mapEl.after(ul);
 
-    Object.values(legendData).forEach((item) => {
-        el.innerHTML += `<li>
+    Object.entries(legendData).forEach(([key, item]) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
             <div class="color" style="background-color: ${item[0]}"></div>
             <div class="label">${item[1]}</div>
-        </li>`;
+        `;
+        li.addEventListener('click', () => toggleLegendItem(key));
+        ul.appendChild(li);
     });
 
-    return el;
+    return ul;
 }
 
 async function getLocations(geocoder, entities) {
@@ -159,6 +162,7 @@ function buildContent(legend, items, duplicateKey) {
     const content = document.createElement("div");
     content.classList.add("marker");
     content.style.setProperty("--marker-color", legend[data.legendKey][0]);
+    content.dataset.legendKey = data.legendKey;
     content.innerHTML = `
         <div class="icon">
             <i aria-hidden="true" class="fa fa-icon fa-${data.icon}" title="${data.icon}"></i>
@@ -193,6 +197,25 @@ async function initMap2() {
         position: position,
         title: "Uluru",
     });
+}
+
+function toggleLegendItem(key) {
+    if(hiddenLegendKeys.has(key)) {
+        markers.forEach((marker) => {
+            if(marker.content.dataset.legendKey === key) {
+                marker.map = map;
+            }
+        });
+        hiddenLegendKeys.delete(key);
+    } else {
+        markers.forEach((marker) => {
+            if(marker.content.dataset.legendKey === key) {
+                marker.map = null;
+            }
+        });
+        hiddenLegendKeys.add(key);
+    }
+
 }
 
 
