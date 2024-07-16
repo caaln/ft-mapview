@@ -3,7 +3,6 @@ let openMarkers = 0;
 const isLatLng = /-?\d+?.\d+?,-?\d+?.\d+?/;
 
 const markers = [];
-const hiddenLegendKeys = new Set();
 
 async function initMap() {
     const {key, pins, legend, duplicateKey} = JSON.parse(decodeURIComponent(window.location.hash.substring(1).replaceAll('^', '"')));
@@ -52,7 +51,6 @@ async function initMap() {
 
     const locations = await getLocations(geocoder, pins);
 
-
     const hasComposite = [...locations.values()].some(({items}) => {
         return items.length > 1 && new Set([...items.map(({legendKey}) => legendKey)]).size > 1
     });
@@ -82,7 +80,7 @@ function createLegend(mapEl, legendData) {
             <div class="color" style="background-color: ${item[0]}"></div>
             <div class="label">${item[1]}</div>
         `;
-        li.addEventListener('click', () => toggleLegendItem(key));
+        li.addEventListener('click', () => toggleLegendItem(li, key));
         ul.appendChild(li);
     });
 
@@ -199,21 +197,32 @@ async function initMap2() {
     });
 }
 
-function toggleLegendItem(key) {
-    if(hiddenLegendKeys.has(key)) {
-        markers.forEach((marker) => {
-            if(marker.content.dataset.legendKey === key) {
-                marker.map = map;
-            }
-        });
-        hiddenLegendKeys.delete(key);
+const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
+async function toggleLegendItem(li, key) {
+    const affected = [];
+    markers.forEach((marker) => {
+        if(marker.content.dataset.legendKey === key) {
+            affected.push(marker);
+        }
+    });
+
+    const duration = 300 / affected.length;
+
+    if(li.classList.contains('hidden')) {
+        li.classList.remove('hidden');
+        for(let marker of affected) {
+            marker.content.classList.remove('fadeout');
+            marker.map = map;
+            await sleep(duration);
+        }
     } else {
-        markers.forEach((marker) => {
-            if(marker.content.dataset.legendKey === key) {
-                marker.map = null;
-            }
-        });
-        hiddenLegendKeys.add(key);
+        li.classList.add('hidden');
+        for(let marker of affected) {
+            marker.content.classList.add('fadeout');
+            setTimeout(() => marker.map = null, 500);
+            await sleep(duration);
+        }
     }
 
 }

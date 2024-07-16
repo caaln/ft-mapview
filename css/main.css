@@ -13,14 +13,28 @@
 .legend > li {
     display: flex;
     align-items: center;
-    margin-top: 4px;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.legend > li + li {
+    margin-top: 0.5rem;
+}
+
+.legend > li.hidden {
+    opacity: 0.3;
+    font-weight: normal;
 }
 
 .legend .color {
     width: 1.5rem;
     height: 1.5rem;
     margin-right: 0.75rem;
-    box-shadow: rgba(0, 0, 0, 0.2) 1px 1px 3px;
+    box-shadow: rgba(0, 0, 0, 0.3) 1px 1px 4px -1px;
+}
+
+.legend .hidden .color {
+    box-shadow: none;
 }
 
 .marker {
@@ -37,7 +51,21 @@
     position: relative;
     transition: all 0.3s ease-out;
     width: 30px;
+    opacity: 1;
 }
+
+@starting-style {
+    .marker {
+        opacity: 0;
+        height: 0;
+    }
+}
+
+.marker.fadeout {
+    opacity: 0;
+    height: 0;
+}
+
 
 .marker::after {
     border-left: 9px solid transparent;
